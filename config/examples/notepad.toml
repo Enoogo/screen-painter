@@ -1,0 +1,77 @@
+# Example profile for testing with Windows Notepad.
+# Launch Notepad, then run:
+#   python run.py --config config/examples/notepad.toml
+#
+# Windows 11's Notepad may host tabs in one process; use --list-windows if the
+# target is not found on your build.
+
+version = 3
+
+[app]
+verify_ms = 1000
+idle_tick_ms = 500
+debug = false
+debug_interval_ms = 400
+
+[keys]
+cancel = "Escape"
+confirm = "Enter"
+delete = "Delete"
+undo = "Ctrl+Z"
+redo = "Ctrl+Shift+Z"
+select_next = "Tab"
+select_prev = "Shift+Tab"
+move_left = "Left"
+move_right = "Right"
+move_up = "Up"
+move_down = "Down"
+move_left_fast = "Shift+Left"
+move_right_fast = "Shift+Right"
+move_up_fast = "Shift+Up"
+move_down_fast = "Shift+Down"
+
+[logging]
+level = "INFO"
+console = true
+file = "logs/notepad-example.log"
+backup_count = 1
+
+[target]
+window = "notepad"
+
+[overlay]
+coordinate_space = "window"
+click_through = true
+
+[layout]
+# "auto" matches the group by the display resolution; switch to "manual" and
+# set `group` to pin one of the groups below.
+mode = "auto"
+match = "monitor"
+group = ""
+hidden = false
+
+[groups.notepad_1920x1080]
+description = "Notepad block for a 1920x1080 display"
+resolution = "1920x1080"
+rectangles = [
+  { name = "notepad_block", x = 80, y = 80, width = 240, height = 120 },
+]
+
+[window_profiles.notepad]
+description = "Windows Notepad"
+process_names = ["notepad.exe"]
+title_patterns = []
+min_width = 200
+min_height = 100
+select = "largest"
+
+[features.occluder]
+type = "black_rectangles"
+enabled = true
+
+[features.toolbar]
+type = "toolbar"
+enabled = true
+auto_position = true
+buttons = ["edit", "move", "hide", "settings"]

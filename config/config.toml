@@ -1,0 +1,203 @@
+# ScreenPainter configuration (schema version 3)
+#
+# This file is intentionally the only place that knows *which* window to draw
+# on and *which* rectangles to draw.  The floating toolbar edits the parts it
+# owns (rectangles, the hidden flag, its own position) and writes them back
+# here, so keep the comments you care about - the editor only rewrites the
+# values it changes.
+#
+# Everything in this file can also be edited from the settings window:
+#   python run.py --settings
+#
+# Coordinates for a rectangle are pixels relative to the overlay's top-left
+# corner.  With overlay.coordinate_space = "window" the origin is the top-left
+# of the visible window frame (including its title bar/outer border).
+
+version = 3
+
+[app]
+name = "ScreenPainter"
+# Tracking is event driven: ScreenPainter sleeps until Windows reports that the
+# target window moved, resized, was shown or was hidden.  This is only the
+# fallback re-check interval (milliseconds) while the target exists.
+verify_ms = 1000
+# How often the target window is searched for while it is absent (milliseconds).
+idle_tick_ms = 500
+# Debug mode: watch this file and apply changes while the app keeps running.
+# Off by default; the file is still written by the toolbar when it is off.
+debug = false
+# How often the file is checked in debug mode (milliseconds, 100-5000).
+debug_interval_ms = 400
+
+# ---------------------------------------------------------------------------
+# Keyboard shortcuts
+# ---------------------------------------------------------------------------
+# Every key the editing modes listen to is configurable.  A shortcut is
+# "Modifier+Key"; modifiers are Ctrl, Alt, Shift and Win.  While an editing
+# mode is active these keys are consumed by ScreenPainter, everything else is
+# passed through to the application underneath.
+[keys]
+# End the current editing/moving mode.
+cancel = "Escape"
+confirm = "Enter"
+# Remove the selected rectangle.
+delete = "Delete"
+# Undo / redo the last rectangle change.
+undo = "Ctrl+Z"
+redo = "Ctrl+Shift+Z"
+# Cycle through the rectangles.
+select_next = "Tab"
+select_prev = "Shift+Tab"
+# Move the selected rectangle by one pixel, or by ten with Shift.
+move_left = "Left"
+move_right = "Right"
+move_up = "Up"
+move_down = "Down"
+move_left_fast = "Shift+Left"
+move_right_fast = "Shift+Right"
+move_up_fast = "Shift+Up"
+move_down_fast = "Shift+Down"
+
+[logging]
+level = "INFO"
+console = true
+# Relative paths are resolved against the project root. Empty string disables
+# file logging.
+file = "logs/screenpainter.log"
+max_bytes = 1000000
+backup_count = 3
+
+[target]
+# This is the variable to change: it must name a table below.
+window = "wechat"
+
+[overlay]
+# "window" = visible DWM window frame (titlebar included)
+# "client" = client/content area (titlebar excluded)
+coordinate_space = "window"
+click_through = true
+
+# ---------------------------------------------------------------------------
+# Resolution / rectangle group selection
+# ---------------------------------------------------------------------------
+[layout]
+# "auto"   = use the group whose resolution matches the current display
+# "manual" = always use the group named by `group` below
+mode = "auto"
+# What "resolution" refers to:
+#   "monitor" = the display the target window is on (1920x1080, ...)
+#   "window"  = the target window size (1121x685, ...)
+match = "monitor"
+# Only used when mode = "manual"; must name a [groups.<name>] table.
+group = ""
+# Hide every saved rectangle (the toolbar's third button toggles this).
+hidden = false
+
+# ---------------------------------------------------------------------------
+# Rectangle groups
+# ---------------------------------------------------------------------------
+# One group per resolution.  Several groups may share the same resolution
+# (for example one per window layout); "auto" mode picks the first matching
+# one in this file, and the command line can select any of them explicitly:
+#
+#   python run.py --list-groups
+#   python run.py --apply-group wechat_1920x1080
+#   python run.py --new-group wechat_alt --monitor 0
+#
+# Add a group for another resolution simply by copying one of these tables and
+# changing `resolution`.  `python run.py --list-monitors` prints the numbers to
+# use.
+
+[groups.wechat_1920x1080]
+description = "WeChat mask for a 1920x1080 display"
+resolution = "1920x1080"
+rectangles = [
+  { name = "name", x = 430, y = 40, width = 200, height = 30, color = "#FAFAFA", opacity = 1.0 },
+  { name = "avatar", x = 430, y = 80, width = 45, height = 500, color = "#FAFAFA", opacity = 1.0 },
+  { name = "contacts", x = 70, y = 160, width = 100, height = 576, color = "#EEEEF0", opacity = 1.0 },
+]
+
+[groups.wechat_3120x2080]
+description = "WeChat mask for a 3120x2080 display (same layout as 1080p)"
+resolution = "3120x2080"
+rectangles = [
+  { name = "name", x = 644, y = 60, width = 200, height = 50, color = "#FAFAFA", opacity = 1.0 },
+  { name = "avatar", x = 633, y = 147, width = 88, height = 765, color = "#FAFAFA", opacity = 1.0 },
+  { name = "contacts", x = 92, y = 214, width = 300, height = 900, color = "#EEEEF0", opacity = 1.0 },
+]
+
+# ---------------------------------------------------------------------------
+# Window profiles
+# ---------------------------------------------------------------------------
+# WeChat 4 uses Weixin.exe; WeChat 3 uses WeChat.exe.  A process alone is not
+# enough on WeChat 4: it can have extra visible top-level windows such as the
+# "Photos and Videos" viewer.  The title filter keeps the main window selected.
+[window_profiles.wechat]
+description = "WeChat / Weixin main window (3.x and 4.x)"
+process_names = ["Weixin.exe", "WeChat.exe"]
+title_patterns = ["^(Weixin|WeChat|微信)$"]
+class_names = []
+min_width = 200
+min_height = 150
+select = "largest"
+
+# Add more profiles here, for example:
+#
+# [window_profiles.notepad]
+# description = "Windows Notepad"
+# process_names = ["notepad.exe"]
+# select = "largest"
+#
+# Then set target.window = "notepad".
+
+# ---------------------------------------------------------------------------
+# Features
+# ---------------------------------------------------------------------------
+# The section name ("occluder") is an instance name.  "type" selects the
+# feature implementation.  Multiple instances of the same type are allowed and
+# are drawn in configuration order.
+#
+# black_rectangles paints the rectangles of the active group; its rectangles
+# live in [groups.<name>] above, never here.
+
+[features.occluder]
+type = "black_rectangles"
+enabled = true
+
+# The floating button panel.
+#   "编辑" - show every rectangle, click to select, drag edges to resize,
+#            drag inside to move, drag empty space to draw a new rectangle.
+#   "移动" - show every rectangle, click to select, drag to move.
+#   "隐藏" - hide every saved rectangle, "显示" to bring them back.
+#   "设置" - open the settings window.
+# Selected rectangles can be deleted with Delete, moved with the arrow keys and
+# the changes undone with Ctrl+Z (see [keys] above).
+# Dragging the panel itself saves auto_position/x/y below.
+[features.toolbar]
+type = "toolbar"
+enabled = true
+# true = dock to the right edge of the screen, vertically centred.
+auto_position = false
+x = 2468
+y = 411
+# Which buttons to show, in order: "edit", "move", "hide", "settings".
+# ("draw" is accepted as a deprecated alias for "edit".)
+buttons = ["edit", "move", "hide", "settings"]
+# Style of newly drawn rectangles.
+default_color = "#000000"
+default_opacity = 1.0
+# Minimum drag distance (in pixels) before a drag becomes a new rectangle.
+min_drag_size = 3
+# Panel heading.
+title = "屏幕遮罩"
+# Outline drawn around every rectangle in the editing modes.
+outline_color = "#FF3B30"
+outline_width = 1
+# Outline and grab square of the selected rectangle.
+selection_color = "#0A84FF"
+selection_width = 3
+handle_size = 7
+# How close (in pixels) the pointer must be to an edge to grab it for resizing.
+handle_tolerance = 6
+# Show a small panel with the selected rectangle's hex colour and geometry.
+properties_panel = true
